@@ -14,206 +14,189 @@ colnames(sim_res)<-c("n_obs","n_clu","d","v_sp","v",# 5 input
                      "qn_d0_ch","qn_d0_max","qn_d1_ch","qn_d1_max",# 4 norm prop inertia
                      "wei_ch","wei_max", "qn_ch","qn_max", # 4 weighted and tot norm inertia
                      "acc_ch","acc_max","adj_rand_ch","adj_rand_max") # 2 correct class rate
-                      # "acc_d0","acc_d1")
 # Set the seed for reproducibility
 set.seed(123)
-#for (d in c(0,0.25,0.5,0.75,1)){
 for (d in c(0,1/3,2/3,1)){
-#for (d in seq(0,1,by=0.2)){
-# Define the number of clusters and their probabilities
-n_obs<-100
-num_clusters <- 4
-cluster_probs <- c(0.25, 0.25, 0.25, 0.25)
-
-#d<-0.2#overlapping parameter (0,1)
-# Define the means and covariance matrices for each cluster
-means_space <- list(
-  c(d, d),
-  c(d, (-d)),
-  c((-d), d),
-  c((-d), (-d))
-)
-v_sp<-0.4
-covs_space <- list(
-  matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
-  matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
-  matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
-  matrix(c(1, 0., 0, 1)*v_sp, ncol=2)
-)
-# Define the means and variances for var1 in each cluster
-var1_means <- c(2,4,6,8)
-v<-0.4 #variablity of var1
-var1_sds <- c(1, 1, 1, 1)*v
-
-x <- numeric(0)
-y <- numeric(0)
-var1 <- numeric(0)
-cluster_labels <- numeric(0)
-
-# Initialize the dataframe
-data <- data.frame(x = numeric(0), y = numeric(0), var1 = numeric(0), var2 = numeric(0), cluster = integer(0))
-
-# Simulation loop
-while (nrow(data) < n_obs) {
-  # Step 1: Determine cluster assignment
-  cluster <- sample(num_clusters, 1, prob = cluster_probs)
+  # Define the number of clusters and their probabilities
+  n_obs<-100
+  num_clusters <- 4
+  cluster_probs <- c(0.25, 0.25, 0.25, 0.25)
+  # Define the means and covariance matrices for each cluster
+  means_space <- list(
+    c(d, d),
+    c(d, (-d)),
+    c((-d), d),
+    c((-d), (-d))
+  )
+  v_sp<-0.4
+  covs_space <- list(
+    matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
+    matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
+    matrix(c(1, 0, 0, 1)*v_sp, ncol=2),
+    matrix(c(1, 0., 0, 1)*v_sp, ncol=2)
+  )
+  # Define the means and variances for var1 in each cluster
+  var1_means <- c(2,4,6,8)
+  v<-0.4 #variablity of var1
+  var1_sds <- c(1, 1, 1, 1)*v
   
-  # Step 2: Simulate position in space
-  position <- mvrnorm(1, means_space[[cluster]], covs_space[[cluster]])
-  # position<-runif(n=2,min=0,max=1)
+  x <- numeric(0)
+  y <- numeric(0)
+  var1 <- numeric(0)
+  cluster_labels <- numeric(0)
   
-  # Step 3: Check if position is within [0, 1] x [0, 1]
-  # if (all(position >= 0 & position <= 1)) {
-  # Step 4: Simulate var1 and var2
-  mean_vars <- var1_means[[cluster]]
-  sd_vars <- var1_sds[[cluster]]
-  var1 <- rnorm(1, mean = mean_vars, sd = sd_vars)
-  #var2 <- rnorm(1, mean = mean_vars[2], sd = sd_vars[2])
+  # Initialize the dataframe
+  data <- data.frame(x = numeric(0), y = numeric(0), var1 = numeric(0), var2 = numeric(0), cluster = integer(0))
   
-  # Step 5: Append to the dataframe
-  data <- rbind(data, data.frame(x = position[1], y = position[2], var1 = var1, cluster = cluster))
-  #}
-}
-data$cluster <- as.factor(data$cluster)
-cluster_colors <- c("blue", "green", "orange", "purple")
-ggplot(data, aes(x=x, y=y, color=cluster, size=var1)) +
-  geom_point() +
-  scale_color_manual(values=cluster_colors) +
-  labs(title="Scatter Plot of Clusters",
-       x="X Coordinate",
-       y="Y Coordinate",
-       color="Cluster",
-       size="Value of var1") +
-  theme_minimal()
-
-d0<-dist(data[,3:4])
-d0<-d0/max(d0)
-d1<-dist(data[,1:2])
-d1<-d1/max(d1)
-T1 <- inertdiss(d0)
-T2 <- inertdiss(d1)
-
-
-cr<-choicealpha(as.dist(d0),as.dist(d1),range.alpha = seq(0,1,0.05),K=4,graph = FALSE)
-a<-as.data.frame(cr$Qnorm)
-b<-as.data.frame(cr$Q)
-a$tot<-a$Q0norm+a$Q1norm
-b$tot<-(b$Q0*T1+b$Q1*T2)/(T1+T2)
-a_ch<-cr$range.alpha[which.min(abs(cr$Qnorm[,1]-cr$Qnorm[,2]))]
-a_max<-cr$range.alpha[which.max(b$tot)]  
-
+  # Simulation loop
+  while (nrow(data) < n_obs) {
+    # Step 1: Determine cluster assignment
+    cluster <- sample(num_clusters, 1, prob = cluster_probs)
+    
+    # Step 2: Simulate position in space
+    position <- mvrnorm(1, means_space[[cluster]], covs_space[[cluster]])
+    
+    # Step 3: Check if position is within [0, 1] x [0, 1]
+    # if (all(position >= 0 & position <= 1)) {
+    # Step 4: Simulate var1 and var2
+    mean_vars <- var1_means[[cluster]]
+    sd_vars <- var1_sds[[cluster]]
+    var1 <- rnorm(1, mean = mean_vars, sd = sd_vars)
+    
+    # Step 5: Append to the dataframe
+    data <- rbind(data, data.frame(x = position[1], y = position[2], var1 = var1, cluster = cluster))
+    #}
+  }
+  data$cluster <- as.factor(data$cluster)
+  cluster_colors <- c("blue", "green", "orange", "purple")
+  ggplot(data, aes(x=x, y=y, color=cluster, size=var1)) +
+    geom_point() +
+    scale_color_manual(values=cluster_colors) +
+    labs(title="Scatter Plot of Clusters",
+         x="X Coordinate",
+         y="Y Coordinate",
+         color="Cluster",
+         size="Value of var1") +
+    theme_minimal()
   
-tree_ch<-hclustgeo(as.dist(d0),as.dist(d1), alpha=a_ch)
-clu_ch<-cutree(tree_ch,k=4)
-data<-cbind(data,clu_ch)
-
-tree_max<-hclustgeo(as.dist(d0),as.dist(d1), alpha=a_max)
-clu_max<-cutree(tree_max,k=4)
-data<-cbind(data,clu_max)
-
-tree_d0<-hclust(as.dist(d0))
-clu_d0<-cutree(tree_d0,k=4)
-data<-cbind(data,clu_d0)
-
-tree_d1<-hclust(as.dist(d1))
-clu_d1<-cutree(tree_d1,k=4)
-data<-cbind(data,clu_d1)
-
-#table(data$cluster,data$clu_ch)
-#table(data$cluster,data$clu_max)
-
-c_ch <- aggregate(. ~ clu_ch, data = data[,c(3,5)], mean) 
-c_max <- aggregate(. ~ clu_max, data = data[,c(3,6)], mean) 
-c_ch <- c_ch %>%
-  mutate(clu_ch2 = ntile(var1, 4))
-c_max <- c_max %>%
-  mutate(clu_max2 = ntile(var1, 4))
-
-#data2 <- data %>%
- # left_join(c_ch[-2], by = c("clu_ch" = "clu_ch2")) #%>%
-  #select(-clu_ch) %>%
-  #rename(clu_ch.y = clu_ch)
-
-data <- data %>%
-  mutate(clu_max = replace(clu_max, clu_max %in% c_max$clu_max, c_max$clu_max2[match(clu_max, c_max$clu_max)]))
-data <- data %>%
-  mutate(clu_ch = replace(clu_ch, clu_ch %in% c_ch$clu_ch, c_ch$clu_ch2[match(clu_ch, c_ch$clu_ch)]))
-data2<-data
-
-#data2 <- data2 %>%
- # left_join(c_max[,-2], by = c("clu_max" = "clu_max2"))
-  #select(-clu_max) %>%
- # rename(clu_max2 = clu_max)
-
-plot_ch<-ggplot(data2, aes(x=x, y=y)) +
-  geom_point(aes(color=as.factor(clu_ch), fill=as.factor(cluster), size=var1), shape=21, stroke=1.5) +
-  scale_color_manual(values=cluster_colors, name="Resulting Cluster") +
-  scale_fill_manual(values=cluster_colors, name="Real Cluster") +
-  labs(title="Clustering with Chavent method",
-       x="X Coordinate",
-       y="Y Coordinate",
-       size="Value of variable Z") +
-  theme_minimal() +
-   #theme(legend.position = "right")
-  theme(legend.position = "none")
-plot_max<-ggplot(data2, aes(x=x, y=y)) +
-  geom_point(aes(color=as.factor(clu_max), fill=as.factor(cluster), size=var1), shape=21, stroke=1.5) +
-  scale_color_manual(values=cluster_colors, name="Resulting Cluster") +
-  scale_fill_manual(values=cluster_colors, name="Real Cluster") +
-  labs(title="Clustering maximum average inertia",
-       x="X Coordinate",
-       y="Y Coordinate",
-       size="Value of variable Z") +
-  theme_minimal() +
-  #theme(legend.position = "right")
-  theme(legend.position = "none")
-grid.arrange(plot_ch, plot_max, ncol = 2)
-
-acc_ch<-sum(data2$cluster==data2$clu_ch)
-acc_max<-sum(data2$cluster==data2$clu_max)
-
-
-
-i_ch<-as.numeric(which.min(abs(cr$Qnorm[,1]-cr$Qnorm[,2])))
-i_max<-as.numeric(which.max(b$tot))
-#proportion of inertia and weighted inertia
-q_d0_ch<-b$Q0[i_ch]
-q_d0_max<-b$Q0[i_max]
-
-q_d1_ch<-b$Q1[i_ch]
-q_d1_max<-b$Q1[i_max]
-
-wei_ch<-b$tot[i_ch]
-wei_max<-b$tot[i_max]
-
-#normalized inertia, d0 d1 total
-qn_d0_ch<-a$Q0norm[i_ch]
-qn_d0_max<-a$Q0norm[i_max]
-
-qn_d1_ch<-a$Q1norm[i_ch]
-qn_d1_max<-a$Q1norm[i_max]
-
-qn_ch<-a$tot[i_ch]
-qn_max<-a$tot[i_max]
-
-adj_rand_ch <- adjustedRandIndex(data$clu_ch, data$cluster)
-adj_rand_max <- adjustedRandIndex(data$clu_max, data$cluster)
-
-sim_result<-c(n_obs,num_clusters,d,v_sp,v, #input
-              a_ch,a_max, # 2 alpha
-              q_d0_ch,q_d0_max,q_d1_ch,q_d1_max, # 4 prop inertia
-              qn_d0_ch,qn_d0_max,qn_d1_ch,qn_d1_max,# 4 norm prop inertia
-              wei_ch,wei_max,qn_ch,qn_max, # 4 weighted and tot norm inertia
-              acc_ch,acc_max,
-              adj_rand_ch,adj_rand_max) # 2 correct classification rate
-sim_res<-rbind(sim_res,sim_result)
+  d0<-dist(data[,3:4])
+  d0<-d0/max(d0)
+  d1<-dist(data[,1:2])
+  d1<-d1/max(d1)
+  T1 <- inertdiss(d0)
+  T2 <- inertdiss(d1)
+  
+  
+  cr<-choicealpha(as.dist(d0),as.dist(d1),range.alpha = seq(0,1,0.05),K=4,graph = FALSE)
+  a<-as.data.frame(cr$Qnorm)
+  b<-as.data.frame(cr$Q)
+  a$tot<-a$Q0norm+a$Q1norm
+  b$tot<-(b$Q0*T1+b$Q1*T2)/(T1+T2)
+  a_ch<-cr$range.alpha[which.min(abs(cr$Qnorm[,1]-cr$Qnorm[,2]))]
+  a_max<-cr$range.alpha[which.max(b$tot)]  
+  
+  
+  tree_ch<-hclustgeo(as.dist(d0),as.dist(d1), alpha=a_ch)
+  clu_ch<-cutree(tree_ch,k=4)
+  data<-cbind(data,clu_ch)
+  
+  tree_max<-hclustgeo(as.dist(d0),as.dist(d1), alpha=a_max)
+  clu_max<-cutree(tree_max,k=4)
+  data<-cbind(data,clu_max)
+  
+  tree_d0<-hclust(as.dist(d0))
+  clu_d0<-cutree(tree_d0,k=4)
+  data<-cbind(data,clu_d0)
+  
+  tree_d1<-hclust(as.dist(d1))
+  clu_d1<-cutree(tree_d1,k=4)
+  data<-cbind(data,clu_d1)
+  
+  #table(data$cluster,data$clu_ch)
+  #table(data$cluster,data$clu_max)
+  
+  c_ch <- aggregate(. ~ clu_ch, data = data[,c(3,5)], mean) 
+  c_max <- aggregate(. ~ clu_max, data = data[,c(3,6)], mean) 
+  c_ch <- c_ch %>%
+    mutate(clu_ch2 = ntile(var1, 4))
+  c_max <- c_max %>%
+    mutate(clu_max2 = ntile(var1, 4))
+  
+  data <- data %>%
+    mutate(clu_max = replace(clu_max, clu_max %in% c_max$clu_max, c_max$clu_max2[match(clu_max, c_max$clu_max)]))
+  data <- data %>%
+    mutate(clu_ch = replace(clu_ch, clu_ch %in% c_ch$clu_ch, c_ch$clu_ch2[match(clu_ch, c_ch$clu_ch)]))
+  data2<-data
+  
+  
+  plot_ch<-ggplot(data2, aes(x=x, y=y)) +
+    geom_point(aes(color=as.factor(clu_ch), fill=as.factor(cluster), size=var1), shape=21, stroke=1.5) +
+    scale_color_manual(values=cluster_colors, name="Resulting Cluster") +
+    scale_fill_manual(values=cluster_colors, name="Real Cluster") +
+    labs(title="Clustering with benchmark method",
+         x="X Coordinate",
+         y="Y Coordinate",
+         size="Value of variable Z") +
+    theme_minimal() +
+    #theme(legend.position = "right")
+    theme(legend.position = "none")
+  plot_max<-ggplot(data2, aes(x=x, y=y)) +
+    geom_point(aes(color=as.factor(clu_max), fill=as.factor(cluster), size=var1), shape=21, stroke=1.5) +
+    scale_color_manual(values=cluster_colors, name="Resulting Cluster") +
+    scale_fill_manual(values=cluster_colors, name="Real Cluster") +
+    labs(title="Clustering with optimal average inertia",
+         x="X Coordinate",
+         y="Y Coordinate",
+         size="Value of variable Z") +
+    theme_minimal() +
+    #theme(legend.position = "right")
+    theme(legend.position = "none")
+  grid.arrange(plot_ch, plot_max, ncol = 2)
+  
+  acc_ch<-sum(data2$cluster==data2$clu_ch)
+  acc_max<-sum(data2$cluster==data2$clu_max)
+  
+  i_ch<-as.numeric(which.min(abs(cr$Qnorm[,1]-cr$Qnorm[,2])))
+  i_max<-as.numeric(which.max(b$tot))
+  #proportion of inertia and weighted inertia
+  q_d0_ch<-b$Q0[i_ch]
+  q_d0_max<-b$Q0[i_max]
+  
+  q_d1_ch<-b$Q1[i_ch]
+  q_d1_max<-b$Q1[i_max]
+  
+  wei_ch<-b$tot[i_ch]
+  wei_max<-b$tot[i_max]
+  
+  #normalized inertia, d0 d1 total
+  qn_d0_ch<-a$Q0norm[i_ch]
+  qn_d0_max<-a$Q0norm[i_max]
+  
+  qn_d1_ch<-a$Q1norm[i_ch]
+  qn_d1_max<-a$Q1norm[i_max]
+  
+  qn_ch<-a$tot[i_ch]
+  qn_max<-a$tot[i_max]
+  
+  adj_rand_ch <- adjustedRandIndex(data$clu_ch, data$cluster)
+  adj_rand_max <- adjustedRandIndex(data$clu_max, data$cluster)
+  
+  sim_result<-c(n_obs,num_clusters,d,v_sp,v, #input
+                a_ch,a_max, # 2 alpha
+                q_d0_ch,q_d0_max,q_d1_ch,q_d1_max, # 4 prop inertia
+                qn_d0_ch,qn_d0_max,qn_d1_ch,qn_d1_max,# 4 norm prop inertia
+                wei_ch,wei_max,qn_ch,qn_max, # 4 weighted and tot norm inertia
+                acc_ch,acc_max,
+                adj_rand_ch,adj_rand_max) # 2 correct classification rate
+  sim_res<-rbind(sim_res,sim_result)
 }
 colnames(sim_res)<-c("n_obs","n_clu","d","v_sp","v",# 5 input
-  "a_ch","a_max", # 2 alpha
-  "q_d0_ch","q_d0_max","q_d1_ch","q_d1_max", # 4 prop inertia
-  "qn_d0_ch","qn_d0_max","qn_d1_ch","qn_d1_max",# 4 norm prop inertia
-  "wei_ch","wei_max", "qn_ch","qn_max", # 4 weighted and tot norm inertia
-  "acc_ch","acc_max","adj_rand_ch","adj_rand_max")
+                     "a_ch","a_max", # 2 alpha
+                     "q_d0_ch","q_d0_max","q_d1_ch","q_d1_max", # 4 prop inertia
+                     "qn_d0_ch","qn_d0_max","qn_d1_ch","qn_d1_max",# 4 norm prop inertia
+                     "wei_ch","wei_max", "qn_ch","qn_max", # 4 weighted and tot norm inertia
+                     "acc_ch","acc_max","adj_rand_ch","adj_rand_max")
+
 #######################################################################
 ############################# MONTE CARLO #############################
 #######################################################################
@@ -251,29 +234,23 @@ n_mc<-500
 n_obs <- 100
 num_clusters <- 4
 sim_list <- list()
-#v_sp_max<-0.5
-#v_sp_min<-0.05
 v_max<-0.6
 v_min<-0.1
 v_sp<-0.4
-#v<-0.4
+v<-0.4
 clu_prob_min<-0.15
 clu_prob_max<-0.35
-#cluster_probs<-c(0.25,0.25,0.25,0.25)
 due_variabili<-FALSE
 plt <- FALSE
 values <- seq(0, 1, by = 0.02)
 
 for (i in 1:n_mc) {
-# Define random parameters for each simulation run
- d <- runif(1, 0, 1)
-  #d <- sample(values, 1)
-  #d=0
-#for (d in c(0,1/3,2/3,1)) {
-  #d<-0
+  # Define random parameters for each simulation run
+  d <- runif(1, 0, 1)
+
   cluster_probs <- sample_clu_prob(clu_prob_min, clu_prob_max, 4, 1)
   means_space <- list(c(d, d), c(d, -d), c(-d, d), c(-d, -d))
-  #v_sp <- runif(1, min = v_sp_min, max = v_sp_max)
+
   covs_space <- list(matrix(c(1, 0, 0, 1) * v_sp, ncol = 2),
                      matrix(c(1, 0, 0, 1) * v_sp, ncol = 2),
                      matrix(c(1, 0, 0, 1) * v_sp, ncol = 2),
@@ -283,7 +260,7 @@ for (i in 1:n_mc) {
   }else{
     means_vars <- list(2,4,6,8)
   }
-   
+  
   v <- runif(1, min = v_min, max = v_max)
   vars_vars <- list(1 * v, 1 * v, 1 * v, 1 * v)
   
@@ -302,23 +279,21 @@ for (i in 1:n_mc) {
     }else{
       data <- rbind(data, data.frame(x = position[1], y = position[2], var1 = var1, cluster = cluster))
     }
-       }
+  }
   data$cluster <- as.factor(data$cluster)
   
   # Distances
   if (due_variabili==TRUE){
     d0 <- dist(data[, 3:4]) / max(dist(data[, 3:4]))
-    }else{
-  d0 <- dist(data[, 3]) / max(dist(data[, 3]))
-    }
+  }else{
+    d0 <- dist(data[, 3]) / max(dist(data[, 3]))
+  }
   d1 <- dist(data[, 1:2]) / max(dist(data[, 1:2]))
   T1 <- inertdiss(d0)
   T2 <- inertdiss(d1)
   
   # Calculate alpha for both methods
   cr <- choicealpha(as.dist(d0), as.dist(d1), range.alpha = seq(0, 1, 0.05), K = 4, graph = FALSE)
-  #a_ch <- cr$range.alpha[which.min(abs(cr$Qnorm[, 1] - cr$Qnorm[, 2]))]
-  #a_max <- cr$range.alpha[which.max((cr$Q0 * T1 + cr$Q1 * T2) / (T1 + T2))]
   
   a<-as.data.frame(cr$Qnorm)
   b<-as.data.frame(cr$Q)
@@ -356,22 +331,6 @@ for (i in 1:n_mc) {
     clu_max_new[clu_max == assignment[i]] <- i
   }
   data$clu_max <- clu_max_new
-  
-  # Display the updated table to see the improved match
-  # table(data$cluster, clu_ch_new)
-  
-  # c_ch <- aggregate(. ~ clu_ch, data = data[,c(3,4)], mean) 
-  #c_max <- aggregate(. ~ clu_max, data = data[,c(3,4)], mean) 
-  #c_ch <- c_ch %>%
-  #  mutate(clu_ch2 = ntile(var2, 4))
-  #c_max <- c_max %>%
-  # mutate(clu_max2 = ntile(var2, 4))
-  
-  #data <- data %>%
-  #mutate(clu_max = replace(clu_max, clu_max %in% c_max$clu_max, c_max$clu_max2[match(clu_max, c_max$clu_max)]))
-  #data <- data %>%
-  # mutate(clu_ch = replace(clu_ch, clu_ch %in% c_ch$clu_ch, c_ch$clu_ch2[match(clu_ch, c_ch$clu_ch)]))
-  
   
   # Calculate Adjusted Rand Index for both methods
   adj_rand_ch <- adjustedRandIndex(data$clu_ch, data$cluster)
@@ -419,9 +378,6 @@ for (i in 1:n_mc) {
   qn_d0_1<-a$Q0norm[length(a$Q0norm)]
   qn_d1_0<-a$Q1norm[1]
   qn_d1_1<-a$Q1norm[length(a$Q1norm)]
-  
-  # mean_a,mean_b,
-  # qn_d0_0,qn_d0_1, qn_d1_0, qn_d1_1,
   
   acc_ch <- sum(data$cluster == data$clu_ch) / n_obs
   acc_max <- sum(data$cluster == data$clu_max) / n_obs
@@ -485,12 +441,6 @@ sim_res <- sim_res[order(sim_res$d),]
 # 4 plot in one image, representing the accuracy,sensitivity,recall and f1 for both methodology. 
 color_method<-c("green","#FF33FF")
 
-#################################
-par(mfrow = c(1,4))
-boxplot(sim_res[,c(30,31)],col=color_method, main="Accuracy", names=c("Chavent", "Morelli"),ylim=c(0,1))
-boxplot(sim_res[,c(34,37)],col=color_method, main="Precision", names=c("Chavent", "Morelli"),ylim=c(0,1))
-boxplot(sim_res[,c(35,38)],col=color_method, main="Sensitivity", names=c("Chavent", "Morelli"),ylim=c(0,1))
-boxplot(sim_res[,c(32,33)],col=color_method, main="Adj. Rand Index", names=c("Chavent", "Morelli"),ylim=c(0,1))
 
 par(mfrow = c(2, 2))
 # 1. Accuracy plot
@@ -517,14 +467,6 @@ lines(loess.smooth(sim_res$d, sim_res$recall_ch, span = 0.75), col = color_metho
 lines(loess.smooth(sim_res$d, sim_res$recall_max, span = 0.75), col = color_method[2], lwd = 2)
 #legend("bottomright", legend = c("Chavent (2018)", "Morelli (2024)"), col = color_method, pch = 16, lwd = 2)
 
-# 4. F1-score plot
-#plot(sim_res$d, sim_res$f1_ch, col = color_method[1], pch = 16, 
- #    xlab = "d = overlapping parameter", ylab = "rate", main = "F1-Score")
-#points(sim_res$d, sim_res$f1_max, col = color_method[2], pch = 16)
-#lines(loess.smooth(sim_res$d, sim_res$f1_ch, span = 0.75), col = color_method[1], lwd = 2)
-#lines(loess.smooth(sim_res$d, sim_res$f1_max, span = 0.75), col = color_method[2], lwd = 2)
-#legend("bottomright", legend = c("Chavent clustering", "Max average inertia"), col = color_method, pch = 16, lwd = 2)
-
 # 4. Adjusted Rand Index
 plot(sim_res$d, sim_res$adj_rand_ch, col = color_method[1], pch = 16, 
      xlab = "d = overlapping parameter", ylab = "rate", main = "Adjusted Rand Index", cex=0.9)
@@ -543,8 +485,8 @@ plot(sim_res$d, sim_res$a_ch, col = color_method[1], pch = 1,
 points(sim_res$d, sim_res$a_max, col = color_method[2], pch = 1, cex=0.9)
 lines(loess.smooth(sim_res$d, sim_res$a_ch, span = 0.5), col = color_method[1], lwd = 2)
 lines(loess.smooth(sim_res$d, sim_res$a_max, span = 0.5), col = color_method[2], lwd = 2)
-#legend("topright", legend = c("Chavent (2018)", "Morelli (2024)"), 
- #      col = color_method, pch = 1,pt.lwd = 2)
+legend("topright", legend = c("Chavent (2018)", "Morelli (2024)"), 
+       col = color_method, pch = 1,pt.lwd = 2)
 
 
 plot(sim_res$d, (sim_res$qn_ch-1), col = color_method[1], pch = 1, 
@@ -552,27 +494,12 @@ plot(sim_res$d, (sim_res$qn_ch-1), col = color_method[1], pch = 1,
 points(sim_res$d, (sim_res$qn_max-1), col = color_method[2], pch = 1, cex=0.9)
 lines(loess.smooth(sim_res$d, sim_res$qn_ch-1, span = 1), col = color_method[1], lwd = 2)
 lines(loess.smooth(sim_res$d, sim_res$qn_max-1, span = 1), col = color_method[2], lwd = 2)
-#legend("bottomright", legend = c("Chavent (2018)", "Morelli (2024)"), 
- #      col = color_method, pch = 16, lwd = 2)
+legend("bottomright", legend = c("Chavent (2018)", "Morelli (2024)"), 
+       col = color_method, pch = 16, lwd = 2)
 
 par(mfrow = c(1,1))
 
-par(mfrow = c(2, 2))
-# 1. Accuracy plot
-plot(sim_res$acc_ch, sim_res$acc_max, col = "blue", pch = 16, cex=0.7,
-     xlab = "d = overlapping parameter", ylab = "rate", main = "Accuracy",ylim = c(0,1),xlim=c(0,1))
-abline(a=0,b=1)
-plot(sim_res$prec_ch, sim_res$prec_max, col = "blue", pch = 16, cex=0.7,
-     xlab = "d = overlapping parameter", ylab = "rate", main = "Precision",ylim = c(0,1),xlim=c(0,1))
-abline(a=0,b=1)
-plot(sim_res$recall_ch, sim_res$recall_max, col = "blue", pch = 16, cex=0.7,
-     xlab = "d = overlapping parameter", ylab = "rate", main = "Sensitivity",ylim = c(0,1),xlim=c(0,1))
-abline(a=0,b=1)
-plot(sim_res$adj_rand_ch, sim_res$adj_rand_max, col = "blue", pch = 16, cex=0.7,
-     xlab = "d = overlapping parameter", ylab = "rate", main = "Adjusted Rand Index",ylim = c(0,1),xlim=c(0,1))
-abline(a=0,b=1)
-# Reset layout to default
-par(mfrow = c(1, 1))
+
 
 ### summary
 stats_df <- data.frame(
@@ -621,19 +548,15 @@ colnames(sim_res)<-c("n_obs","n_clu","d","v_sp","v",# 5 input
                      "qn_d0_ch","qn_d0_max","qn_d1_ch","qn_d1_max",# 4 norm prop inertia
                      "wei_ch","wei_max", "qn_ch","qn_max", # 4 weighted and tot norm inertia
                      "acc_ch","acc_max") # 2 correct class rate
-# "acc_d0","acc_d1")
 # Set the seed for reproducibility
 set.seed(12)
-#for (d in c(0,0.25,0.5,0.75,1)){
+
 for (d in c(0,1)){
-  #for (d in seq(0,1,by=0.2)){
   # Define the number of clusters and their probabilities
   n_obs<-150
   num_clusters <- 2
   cluster_probs <- c(0.5,0.5)
   
-  #d<-0.2#overlapping parameter (0,1)
-  # Define the means and covariance matrices for each cluster
   means_space <- list(
     c(d, d),
     c((-d), (-d))
@@ -672,7 +595,6 @@ for (d in c(0,1)){
     mean_vars <- var1_means[[cluster]]
     sd_vars <- var1_sds[[cluster]]
     var1 <- rnorm(1, mean = mean_vars, sd = sd_vars)
-    #var2 <- rnorm(1, mean = mean_vars[2], sd = sd_vars[2])
     
     # Step 5: Append to the dataframe
     data <- rbind(data, data.frame(x = position[1], y = position[2], var1 = var1, cluster = cluster))
@@ -723,9 +645,6 @@ for (d in c(0,1)){
   clu_d1<-cutree(tree_d1,k=2)
   data<-cbind(data,clu_d1)
   
-  #table(data$cluster,data$clu_ch)
-  #table(data$cluster,data$clu_max)
-  
   
   c_ch <- aggregate(. ~ clu_ch, data = data[,c(3,5)], mean) 
   c_max <- aggregate(. ~ clu_max, data = data[,c(3,6)], mean) 
@@ -741,11 +660,6 @@ for (d in c(0,1)){
   c_d1 <- c_d1 %>%
     mutate(clu_d12 = ntile(var1, 2))
   
-  #data2 <- data %>%
-  # left_join(c_ch[-2], by = c("clu_ch" = "clu_ch2")) #%>%
-  #select(-clu_ch) %>%
-  #rename(clu_ch.y = clu_ch)
-  
   data <- data %>%
     mutate(clu_max = replace(clu_max, clu_max %in% c_max$clu_max, c_max$clu_max2[match(clu_max, c_max$clu_max)]))
   data <- data %>%
@@ -757,11 +671,6 @@ for (d in c(0,1)){
   data <- data %>%
     mutate(clu_d0 = replace(clu_d0, clu_d0 %in% c_d0$clu_d0, c_d0$clu_d02[match(clu_d0, c_d0$clu_d0)]))
   data2<-data
-  
-  #data2 <- data2 %>%
-  # left_join(c_max[,-2], by = c("clu_max" = "clu_max2"))
-  #select(-clu_max) %>%
-  # rename(clu_max2 = clu_max)
   
   plot_clu<-ggplot(data2, aes(x=x, y=y)) +
     geom_point(aes(color=as.factor(cluster), fill=as.factor(cluster), size=var1), shape=21, stroke=1.5) +
@@ -821,14 +730,10 @@ for (d in c(0,1)){
     #theme(legend.position = "right")
     theme(legend.position = "none")
   
-  # grid.arrange(plot_d0,plot_d1,plot_max, ncol = 3)
-  #grid.arrange(plot_clu,plot_d0,plot_d1,plot_max, nrow = 4)
   grid.arrange(plot_clu,nrow =1 )
   
   acc_ch<-sum(data2$cluster==data2$clu_ch)
   acc_max<-sum(data2$cluster==data2$clu_max)
-  
-  
   
   i_ch<-as.numeric(which.min(abs(cr$Qnorm[,1]-cr$Qnorm[,2])))
   i_max<-as.numeric(which.max(b$tot))
@@ -874,18 +779,14 @@ colnames(sim_res)<-c("n_obs","n_clu","d","v_sp","v",# 5 input
                      "qn_d0_ch","qn_d0_max","qn_d1_ch","qn_d1_max",# 4 norm prop inertia
                      "wei_ch","wei_max", "qn_ch","qn_max", # 4 weighted and tot norm inertia
                      "acc_ch","acc_max") # 2 correct class rate
-# "acc_d0","acc_d1")
 # Set the seed for reproducibility
 set.seed(12)
-#for (d in c(0,0.25,0.5,0.75,1)){
 for (d in c(0,1)){
-  #for (d in seq(0,1,by=0.2)){
   # Define the number of clusters and their probabilities
   n_obs<-150
   num_clusters <- 2
   cluster_probs <- c(0.5,0.5)
-  
-  #d<-0.2#overlapping parameter (0,1)
+
   # Define the means and covariance matrices for each cluster
   means_space <- list(
     c(d, d),
@@ -918,7 +819,6 @@ for (d in c(0,1)){
     #cluster_sp<-cluster
     # Step 2: Simulate position in space
     position <- mvrnorm(1, means_space[[cluster_sp]], covs_space[[cluster_sp]])
-    # position<-runif(n=2,min=0,max=1)
     
     # Step 3: Check if position is within [0, 1] x [0, 1]
     # if (all(position >= 0 & position <= 1)) {
@@ -946,7 +846,7 @@ for (d in c(0,1)){
     guides(size = "none") +  # Remove the size legend
     theme_minimal()
   
-  }
+}
 colnames(sim_res)<-c("n_obs","n_clu","d","v_sp","v",# 5 input
                      "a_ch","a_max", # 2 alpha
                      "q_d0_ch","q_d0_max","q_d1_ch","q_d1_max", # 4 prop inertia
